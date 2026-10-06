@@ -39,6 +39,12 @@ contract RejectingInspector {
     }
 }
 
+contract RejectingRefundRecipient {
+    receive() external payable {
+        revert("refund rejected");
+    }
+}
+
 contract ZTOAdapterTest is Test {
     address internal constant OWNER = 0xcECc29B037f5064fCdF45a5C318F132ef76aA551;
     address internal constant ENDPOINT = 0x1a44076050125825900e736c501f859c50fE728c;
@@ -612,6 +618,236 @@ contract ZTOAdapterTest is Test {
         assertEq(token.balanceOf(ALICE), beforeBalance);
         assertEq(token.balanceOf(address(adapter)), 0);
         assertEq(token.totalSupply(), supply);
+    }
+
+    /// forge-config: default.fuzz.runs = 1000
+    function testFuzzArbitraryNonOwnerCannotChangePeerOrDelegate(address caller, uint32 eid, bytes32 proposedPeer)
+        public
+    {
+        if (caller == OWNER) caller = ALICE;
+        bytes memory reason = abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, caller);
+        vm.startPrank(caller);
+        vm.expectRevert(reason);
+        adapter.setPeer(eid, proposedPeer);
+        vm.expectRevert(reason);
+        adapter.setDelegate(caller);
+        vm.stopPrank();
+        assertEq(adapter.peers(ROBINHOOD), peer);
+        assertEq(endpoint.delegates(address(adapter)), OWNER);
+        assertEq(endpoint.delegateCalls(), 1);
+    }
+
+    /// forge-config: default.fuzz.runs = 1000
+    function testFuzzOwnerCannotAddAnyOtherEndpoint(uint32 eid, bytes32 proposedPeer) public {
+        if (eid == ROBINHOOD) eid = HOME;
+        vm.prank(OWNER);
+        vm.expectRevert(abi.encodeWithSelector(ZTOAdapter.UnsupportedEndpoint.selector, eid));
+        adapter.setPeer(eid, proposedPeer);
+        assertEq(adapter.peers(eid), bytes32(0));
+        assertEq(adapter.peers(ROBINHOOD), peer);
+    }
+
+    /// forge-config: default.fuzz.runs = 1000
+    function testFuzzNonEndpointAndWrongPeerCannotReleaseFunds(address caller, bytes32 sender, uint64 nonce) public {
+        _send(_params(5 ether));
+        if (caller == ENDPOINT) caller = ALICE;
+        if (sender == peer) sender = bytes32(uint256(peer) ^ 1);
+        bytes memory message = _message(BOB, 5e6);
+        vm.prank(caller);
+        vm.expectRevert(abi.encodeWithSelector(OAppReceiver.OnlyEndpoint.selector, caller));
+        adapter.lzReceive(_origin(nonce), bytes32(0), message, caller, "");
+        vm.prank(ENDPOINT);
+        vm.expectRevert(abi.encodeWithSelector(IOAppCore.OnlyPeer.selector, ROBINHOOD, sender));
+        adapter.lzReceive(Origin(ROBINHOOD, sender, nonce), bytes32(0), message, caller, "");
+        assertEq(token.balanceOf(address(adapter)), 5 ether);
+        assertEq(token.balanceOf(BOB), 0);
+    }
+
+    /// forge-config: default.fuzz.runs = 1000
+    function testFuzzTruncatedMessagesCannotReleaseFunds(uint8 lengthSeed, bytes32 entropy) public {
+        _send(_params(5 ether));
+        uint256 length = bound(lengthSeed, 0, 39);
+        bytes memory source = abi.encodePacked(_addressBytes(BOB), entropy);
+        bytes memory message = new bytes(length);
+        for (uint256 i; i < length; ++i) {
+            message[i] = source[i];
+        }
+        Origin memory origin = _origin(1);
+        bytes32 guid = keccak256(message);
+        endpoint.queue(origin, address(adapter), guid, message);
+        bytes32 key = endpoint.packetKey(origin, address(adapter));
+        bytes32 payloadHash = endpoint.verified(key);
+        // Solidity calldata slicing rejects incomplete 32-byte recipient / 8-byte amount fields.
+        vm.expectRevert();
+        endpoint.deliver(origin, address(adapter), guid, message);
+        assertEq(token.balanceOf(address(adapter)), 5 ether);
+        assertEq(token.balanceOf(BOB), 0);
+        assertEq(endpoint.verified(key), payloadHash);
+        assertFalse(endpoint.delivered(key));
+    }
+
+    /// forge-config: default.fuzz.runs = 1000
+    function testFuzzOneWeiAboveRoundedMinimumAlwaysReverts(uint64 amountSD, uint256 dustSeed) public {
+        uint256 whole = uint256(amountSD) * RATE;
+        uint256 requested = whole + bound(dustSeed, 0, RATE - 1);
+        token.mint(ALICE, requested);
+        SendParam memory param = _params(requested);
+        param.minAmountLD = whole + 1;
+        bytes memory reason = abi.encodeWithSelector(IOFT.SlippageExceeded.selector, whole, whole + 1);
+        vm.expectRevert(reason);
+        adapter.quoteOFT(param);
+        vm.expectRevert(reason);
+        adapter.quoteSend(param, false);
+        _approve(requested);
+        vm.prank(ALICE);
+        vm.expectRevert(reason);
+        adapter.send{value: FEE}(param, MessagingFee(FEE, 0), ALICE);
+        assertEq(token.balanceOf(ALICE), INITIAL_BALANCE + requested);
+        assertEq(token.balanceOf(address(adapter)), 0);
+        assertEq(token.allowance(ALICE, address(adapter)), requested);
+        assertEq(endpoint.lastNonce(), 0);
+        assertEq(ENDPOINT.balance, 0);
+
+        // The adjacent acceptable minimum must succeed with the same balances and approval.
+        param.minAmountLD = whole;
+        vm.prank(ALICE);
+        (, OFTReceipt memory receipt) = adapter.send{value: FEE}(param, MessagingFee(FEE, 0), ALICE);
+        assertEq(receipt.amountSentLD, whole);
+        assertEq(receipt.amountReceivedLD, whole);
+        assertEq(token.balanceOf(address(adapter)), whole);
+        assertEq(token.balanceOf(ALICE), INITIAL_BALANCE + requested - whole);
+    }
+
+    function testPeerReplacementRejectsOldInflightPacketAndRestorationAllowsRetry() public {
+        _send(_params(5 ether));
+        Origin memory origin = _origin(1);
+        bytes memory message = _message(BOB, 5e6);
+        bytes32 guid = keccak256("inflight");
+        endpoint.queue(origin, address(adapter), guid, message);
+        bytes32 key = endpoint.packetKey(origin, address(adapter));
+        bytes32 verifiedBefore = endpoint.verified(key);
+        bytes32 replacement = _addressBytes(address(0xCAFE));
+        vm.prank(OWNER);
+        adapter.setPeer(ROBINHOOD, replacement);
+        assertFalse(adapter.allowInitializePath(origin));
+        assertTrue(adapter.allowInitializePath(Origin(ROBINHOOD, replacement, 1)));
+        vm.expectRevert(abi.encodeWithSelector(IOAppCore.OnlyPeer.selector, ROBINHOOD, peer));
+        endpoint.deliver(origin, address(adapter), guid, message);
+        assertEq(endpoint.verified(key), verifiedBefore);
+        assertFalse(endpoint.delivered(key));
+        assertEq(token.balanceOf(address(adapter)), 5 ether);
+        assertEq(token.balanceOf(BOB), 0);
+        vm.prank(OWNER);
+        adapter.setPeer(ROBINHOOD, peer);
+        endpoint.deliver(origin, address(adapter), guid, message);
+        assertEq(token.balanceOf(BOB), 5 ether);
+        assertEq(token.balanceOf(address(adapter)), 0);
+    }
+
+    function testOwnershipTransferMovesPeerAuthorityButDoesNotMoveCustody() public {
+        _send(_params(5 ether));
+        vm.prank(OWNER);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableInvalidOwner.selector, address(0)));
+        adapter.transferOwnership(address(0));
+        assertEq(adapter.owner(), OWNER);
+        vm.prank(OWNER);
+        adapter.transferOwnership(BOB);
+        vm.prank(OWNER);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, OWNER));
+        adapter.setPeer(ROBINHOOD, bytes32(0));
+        vm.prank(BOB);
+        adapter.setPeer(ROBINHOOD, bytes32(0));
+        assertEq(adapter.peers(ROBINHOOD), bytes32(0));
+        assertEq(token.balanceOf(address(adapter)), 5 ether);
+        assertEq(token.balanceOf(BOB), 0);
+        assertEq(endpoint.delegates(address(adapter)), OWNER);
+        vm.prank(BOB);
+        adapter.setPeer(ROBINHOOD, peer);
+        _receive(ALICE, 5e6, 1);
+        assertEq(token.balanceOf(ALICE), INITIAL_BALANCE);
+    }
+
+    function testMaximumUint256CannotTruncateSharedAmountAndRollsBack() public {
+        token.mint(ALICE, type(uint256).max - INITIAL_BALANCE);
+        SendParam memory param = _params(type(uint256).max);
+        _approve(type(uint256).max);
+        bytes memory reason = abi.encodeWithSelector(IOFT.AmountSDOverflowed.selector, type(uint256).max / RATE);
+        vm.expectRevert(reason);
+        adapter.quoteSend(param, false);
+        vm.prank(ALICE);
+        vm.expectRevert(reason);
+        adapter.send{value: FEE}(param, MessagingFee(FEE, 0), ALICE);
+        assertEq(token.balanceOf(ALICE), type(uint256).max);
+        assertEq(token.totalSupply(), type(uint256).max);
+        assertEq(token.allowance(ALICE, address(adapter)), type(uint256).max);
+        assertEq(token.balanceOf(address(adapter)), 0);
+        assertEq(endpoint.lastNonce(), 0);
+        assertEq(ENDPOINT.balance, 0);
+    }
+
+    function testZeroOneWeiAndSharedUnitBoundaries() public {
+        uint256[5] memory amounts = [uint256(0), 1, RATE - 1, RATE, RATE + 1];
+        uint256 locked;
+        for (uint256 i; i < amounts.length; ++i) {
+            uint256 beforeBalance = token.balanceOf(ALICE);
+            (, OFTReceipt memory receipt) = _send(_params(amounts[i]));
+            uint256 expected = i < 3 ? 0 : RATE;
+            locked += expected;
+            assertEq(receipt.amountSentLD, expected);
+            assertEq(receipt.amountReceivedLD, expected);
+            assertEq(token.balanceOf(ALICE), beforeBalance - expected);
+            assertEq(token.balanceOf(address(adapter)), locked);
+            assertEq(endpoint.lastMessage(), _message(BOB, uint64(expected / RATE)));
+        }
+        assertEq(locked, 2 * RATE);
+        assertEq(token.totalSupply(), INITIAL_BALANCE);
+    }
+
+    function testFullSupplyCanBeLockedAndReleasedWithoutFee() public {
+        _send(_params(INITIAL_BALANCE));
+        assertEq(token.balanceOf(ALICE), 0);
+        assertEq(token.balanceOf(address(adapter)), token.totalSupply());
+        _receive(BOB, uint64(INITIAL_BALANCE / RATE), 1);
+        assertEq(token.balanceOf(BOB), INITIAL_BALANCE);
+        assertEq(token.balanceOf(address(adapter)), 0);
+        assertEq(token.totalSupply(), INITIAL_BALANCE);
+    }
+
+    function testRejectingRefundRollsBackSendAndCanBeRetried() public {
+        RejectingRefundRecipient recipient = new RejectingRefundRecipient();
+        SendParam memory param = _params(1 ether);
+        _approve(param.amountLD);
+        uint256 ethBefore = ALICE.balance;
+        vm.prank(ALICE);
+        vm.expectRevert(bytes("refund failed"));
+        adapter.send{value: FEE + 1}(param, MessagingFee(FEE + 1, 0), address(recipient));
+        _assertNoSend();
+        assertEq(ALICE.balance, ethBefore);
+        assertEq(token.allowance(ALICE, address(adapter)), param.amountLD);
+        vm.prank(ALICE);
+        adapter.send{value: FEE + 1}(param, MessagingFee(FEE + 1, 0), ALICE);
+        assertEq(token.balanceOf(address(adapter)), 1 ether);
+        assertEq(ALICE.balance, ethBefore - FEE);
+        assertEq(endpoint.lastNonce(), 1);
+    }
+
+    function testEndpointFailureRollsBackBothZTOAndLzTokenFees() public {
+        MockZTO feeToken = new MockZTO();
+        feeToken.mint(ALICE, 5 ether);
+        endpoint.setFees(FEE, 5 ether, address(feeToken));
+        endpoint.setFailures(false, true, false);
+        SendParam memory param = _params(1 ether);
+        _approve(param.amountLD);
+        vm.startPrank(ALICE);
+        feeToken.approve(address(adapter), 5 ether);
+        vm.expectRevert(EndpointV2Mock.SendRejected.selector);
+        adapter.send{value: FEE}(param, MessagingFee(FEE, 5 ether), ALICE);
+        vm.stopPrank();
+        _assertNoSend();
+        assertEq(token.allowance(ALICE, address(adapter)), param.amountLD);
+        assertEq(feeToken.balanceOf(ALICE), 5 ether);
+        assertEq(feeToken.balanceOf(ENDPOINT), 0);
+        assertEq(feeToken.allowance(ALICE, address(adapter)), 5 ether);
     }
 
     function _params(uint256 amount) internal pure returns (SendParam memory) {
