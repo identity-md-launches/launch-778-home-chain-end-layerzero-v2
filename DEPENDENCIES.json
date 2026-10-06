@@ -1,0 +1,113 @@
+[
+  {
+    "package": "@layerzerolabs/oft-evm",
+    "version": "4.0.1",
+    "tarball": "https://registry.npmjs.org/@layerzerolabs/oft-evm/-/oft-evm-4.0.1.tgz",
+    "integrity": "sha512-GjjfnUbx77TnFFKALVRXJYb1bt1jvarcyyx/AQo6sZfJng5DIqzI9wDxEGlUz03tEnsS6ZOOLBsH+e/hYsruiA==",
+    "repository": {
+      "url": "git+https://github.com/LayerZero-Labs/devtools.git",
+      "type": "git",
+      "directory": "packages/oft-evm"
+    },
+    "gitHead": null,
+    "licenseSources": [
+      "https://raw.githubusercontent.com/LayerZero-Labs/LayerZero-v2/9c741e7f9790639537b1710a203bcdfd73b0b9ac/LICENSE-MIT"
+    ],
+    "sourceHashes": {
+      "contracts/OFT.sol": "6f7e6b7d514cd2be4e6e5fa0827706289882a62c496786c9c08d5560e1c52415",
+      "contracts/OFTAdapter.sol": "eb379c3d62dc2bde9c8f736d1c886c9c8ec0551cdf28b32e0e55bd84c531555d",
+      "contracts/OFTCore.sol": "5279e6c361b133d057aed94e17f538567cf3d3bc36ca252779b3e013d339e8f1",
+      "contracts/interfaces/IOFT.sol": "560266d2a54174fdb45cfc792e1fd8f6d215b39d8046df08b11c554c8ee292c2",
+      "contracts/libs/OFTComposeMsgCodec.sol": "c1fe5b84aa7fdc9b5480174db9d46baa241edc7a1cc63a93a827e16b7dc21fc8",
+      "contracts/libs/OFTMsgCodec.sol": "3e6dfff6595f8af1c1618a80e30efd16f117652e1fd73ffb1f6795dcc443d658"
+    }
+  },
+  {
+    "package": "@layerzerolabs/oapp-evm",
+    "version": "0.4.1",
+    "tarball": "https://registry.npmjs.org/@layerzerolabs/oapp-evm/-/oapp-evm-0.4.1.tgz",
+    "integrity": "sha512-eOoDepVSrUlVNIlnkH0Vd5Vt4lXBkSBh6Bb16vsLbaN9AryBjy4GDpsE7K4c8iWTFL9BiBXGsV7nJTkgqi+xRQ==",
+    "repository": {
+      "url": "git+https://github.com/LayerZero-Labs/devtools.git",
+      "type": "git",
+      "directory": "packages/oapp-evm"
+    },
+    "gitHead": null,
+    "licenseSources": [
+      "https://raw.githubusercontent.com/LayerZero-Labs/LayerZero-v2/9c741e7f9790639537b1710a203bcdfd73b0b9ac/LICENSE-MIT"
+    ],
+    "sourceHashes": {
+      "contracts/oapp/OApp.sol": "92b191c937374b6e76686245b7b98eb3bc0bfacff4d54b279b7ecf1321878e04",
+      "contracts/oapp/OAppCore.sol": "b0a3e30618f5d4c71732a2048d7c2928be399508d6ec622c9345915c92b3dd0a",
+      "contracts/oapp/OAppReceiver.sol": "8d1dd4a6a74c3d9704a078e6404dcf7aab688b750ea64e8331f873e253862bc0",
+      "contracts/oapp/OAppSender.sol": "276f5d551ae7e478fb0c56002acf5476e628748c1f5ba0d63ea051e93813a137",
+      "contracts/oapp/interfaces/IOAppCore.sol": "041dd35f0a4a22425614414c05cd5aae6ce7e4b5b86b0350045e57c0ed3cbf1b",
+      "contracts/oapp/interfaces/IOAppMsgInspector.sol": "5bb1fd1038c648bff4e9c7b88f322c5cde41d355f03090ad1ec46f6712f09c4e",
+      "contracts/oapp/interfaces/IOAppOptionsType3.sol": "c14d4f013045452583eae3baf14743e0628e24c146c3beea5a10b992b1171756",
+      "contracts/oapp/interfaces/IOAppReceiver.sol": "da4aff9322961c648e2221f7df203a44b375a397f2548b74679b3e9d0ae9addd",
+      "contracts/oapp/libs/OAppOptionsType3.sol": "7414ab6a173705ac741772684d2bda00a0ed044c5e9faa3339a2dfe10ec867f3",
+      "contracts/precrime/OAppPreCrimeSimulator.sol": "b0fcd1e2da22197e21ff13a350ac9d0a7f7e5e8bb1528c5d9860a3b820f555f9",
+      "contracts/precrime/interfaces/IOAppPreCrimeSimulator.sol": "2db19c9641e81e5366c268c40506db56ee5434b5c874cffe02fb1e18034a9285",
+      "contracts/precrime/interfaces/IPreCrime.sol": "25a8f3b9257ed4f65fca276f7631cca3ead87c2f17c837e6eee90c8835433380",
+      "contracts/precrime/libs/Packet.sol": "b95b1e7f7470306f41da606d0984b9384d2134fc19ee814d7d9f98c613836745"
+    }
+  },
+  {
+    "package": "@layerzerolabs/lz-evm-protocol-v2",
+    "version": "3.0.168",
+    "tarball": "https://registry.npmjs.org/@layerzerolabs/lz-evm-protocol-v2/-/lz-evm-protocol-v2-3.0.168.tgz",
+    "integrity": "sha512-1m9uZDcROJrFjjFZ06J6kmXIqFoJ4r2VH95bL5wsKjkmffNrRYyxbTr2pael7EP8dcq55HpCKc9dg4G1SfTOVQ==",
+    "repository": null,
+    "gitHead": "611b4b1b9c06b84e329a53459d20a51b1da00955",
+    "licenseSources": [
+      "https://raw.githubusercontent.com/LayerZero-Labs/LayerZero-v2/9c741e7f9790639537b1710a203bcdfd73b0b9ac/LICENSE-MIT",
+      "https://raw.githubusercontent.com/LayerZero-Labs/LayerZero-v2/9c741e7f9790639537b1710a203bcdfd73b0b9ac/LICENSE-LZBL-1.2"
+    ],
+    "sourceHashes": {
+      "contracts/interfaces/ILayerZeroEndpointV2.sol": "a88fb702b371527c3791d7e5c168c1157d39021ed29b51e627e02973e6a740e0",
+      "contracts/interfaces/ILayerZeroReceiver.sol": "24e4add7dd95a72dad23e26c4fadfc1b6ce63148e0c7f4d6ad5dfaeda79db3e7",
+      "contracts/interfaces/IMessageLib.sol": "7a5733cf68663e1a924c5237adfdad5522a063e2214a81a7ca932242dc45481b",
+      "contracts/interfaces/IMessageLibManager.sol": "ffc33e319ab5e9d1392d16f8716625bcfb1dc34b744551f87dad1c0eb3ad11f1",
+      "contracts/interfaces/IMessagingChannel.sol": "9d0100f7cede83d5a4f6c9e03d6bfd24f861e9331b298ca4c73f99b161c718d5",
+      "contracts/interfaces/IMessagingComposer.sol": "5e7e5a47a477dcf05c034d5135bf6516119af881ea78d586805eee0ad5ab6b12",
+      "contracts/interfaces/IMessagingContext.sol": "b7f081828b8d0d206833953ebd73101bb28ac62541e7e8365fddc38eb440a92a",
+      "contracts/interfaces/ISendLib.sol": "816acb88e015f130be9811b4e8efda8d829830ead2f009eb5a9444137af301b5",
+      "contracts/libs/AddressCast.sol": "e48211bfba874d0ce5c3b1fc4e4aac67450ac9539a75e814807745181d04e7dd",
+      "contracts/messagelib/libs/PacketV1Codec.sol": "ed105f6e0e1ac7ef92b582e30d0d55d260cdcd6ca63057cd866f4c019c069b44"
+    }
+  },
+  {
+    "package": "@openzeppelin/contracts",
+    "version": "5.0.2",
+    "tarball": "https://registry.npmjs.org/@openzeppelin/contracts/-/contracts-5.0.2.tgz",
+    "integrity": "sha512-ytPc6eLGcHHnapAZ9S+5qsdomhjo6QBHTDRRBFfTxXIpsicMhVPouPgmUPebZZZGX7vt9USA+Z+0M0dSVtSUEA==",
+    "repository": {
+      "url": "git+https://github.com/OpenZeppelin/openzeppelin-contracts.git",
+      "type": "git"
+    },
+    "gitHead": null,
+    "licenseSources": [
+      "https://raw.githubusercontent.com/OpenZeppelin/openzeppelin-contracts/v5.0.2/LICENSE"
+    ],
+    "sourceHashes": {
+      "access/Ownable.sol": "38578bd71c0a909840e67202db527cc6b4e6b437e0f39f0c909da32c1e30cb81",
+      "interfaces/draft-IERC6093.sol": "4aea87243e6de38804bf8737bf86f750443d3b5e63dd0fd0b7ad92f77cdbd3e3",
+      "token/ERC20/ERC20.sol": "2d874da1c1478ed22a2d30dcf1a6ec0d09a13f897ca680d55fb49fbcc0e0c5b1",
+      "token/ERC20/IERC20.sol": "6f2faae462e286e24e091d7718575179644dc60e79936ef0c92e2d1ab3ca3cee",
+      "token/ERC20/extensions/IERC20Metadata.sol": "1d079c20a192a135308e99fa5515c27acfbb071e6cdb0913b13634e630865939",
+      "token/ERC20/extensions/IERC20Permit.sol": "912509e0e9bf74e0f8a8c92d031b5b26d2d35c6d4abf3f56251be1ea9ca946bf",
+      "token/ERC20/utils/SafeERC20.sol": "471157c89111d7b9eab456b53ebe9042bc69504a64cb5cc980d38da9103379ae",
+      "utils/Address.sol": "b3710b1712637eb8c0df81912da3450da6ff67b0b3ed18146b033ed15b1aa3b9",
+      "utils/Context.sol": "847fda5460fee70f56f4200f59b82ae622bb03c79c77e67af010e31b7e2cc5b6",
+      "utils/introspection/IERC165.sol": "07ae1ac964ab74dedada999e2dfc642031a6495469cffc0bf715daa4f1e4f904"
+    }
+  },
+  {
+    "package": "forge-std",
+    "version": "1.9.7",
+    "tarball": "https://codeload.github.com/foundry-rs/forge-std/tar.gz/refs/tags/v1.9.7",
+    "sha256": "45157353ab49eab01d294565866731e599b32401757229689ee459aa26b7ee94",
+    "location": "test/vendor/forge-std",
+    "license": "MIT OR Apache-2.0"
+  }
+]
