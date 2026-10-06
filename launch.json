@@ -1,0 +1,10 @@
+{
+  "kind": "evm_contracts",
+  "contracts": [
+    {
+      "contract": "ZTOAdapter",
+      "constructorArgs": []
+    }
+  ],
+  "notes": "Deploy ZTOAdapter from src/ZTOAdapter.sol on Ethereum. Its zero-argument constructor fixes ZTO to 0xd782bdea4ef02a0bd391eb9089470c8080f0a68e, EndpointV2 to 0x1a44076050125825900e736c501f859c50fE728c (home endpoint id 30101), and the initial owner and delegate to 0xcecc29b037f5064fcdf45a5c318f132ef76aa551, independently of the deploying factory. The adapter locks existing ZTO on send and releases custody on authenticated receive using LayerZero V2 OApp/OFT semantics, 18 constant local decimals and 6 shared decimals. The constructor never reads token metadata and registers the delegate only when endpoint code exists; owner-only setDelegate supports deferred registration. Only the owner can configure a peer, restricted to Robinhood endpoint id 30416; the peer is initially unset. This manifest deploys only the Ethereum adapter and includes no initialization calls. No application fees, pause, upgrade path or rescue function. Required LayerZero code is included under src/."
+}
